@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<!-- saved from url=(0049)https://tehnokv.com/posts/puploc-with-trees/demo/ -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		
+		<meta http-equiv="X-UA-Compatible" content="chrome=1">
+		<title>play-eye - face recognition music for babies</title>
+		<script async="" src="./tracker.js.download" id="fathom-script"></script>
+			<script src="camvas.js"></script>
+		<script src="pico.js"></script>
+		<script src="lploc.js"></script>
+		<!--<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">-->
+
+		<link rel="stylesheet" type="text/css" href="./blog.style.css">
+	<script>
+		let historical = [[0,0]]; // initializing historical variable (even though one exist in the eye rec)
+
+		var initialized = false;
+		function button_callback() {
+			/*
+				(0) check whether we're already running face detection
+			*/
+			if(initialized)
+				return; // if yes, then do not initialize everything again
+			/*
+				(1) initialize the pico.js face detector
+			*/
+			var update_memory = pico.instantiate_detection_memory(5); // we will use the detecions of the last 5 frames
+			var facefinder_classify_region = function(r, c, s, pixels, ldim) {return -1.0;};
+			var cascadeurl = 'https://raw.githubusercontent.com/nenadmarkus/pico/c2e81f9d23cc11d1a612fd21e4f9de0921a5d0d9/rnt/cascades/facefinder';
+			fetch(cascadeurl).then(function(response) {
+				response.arrayBuffer().then(function(buffer) {
+					var bytes = new Int8Array(buffer);
+					facefinder_classify_region = pico.unpack_cascade(bytes);
+					console.log('* facefinder loaded');
+				})
+			})
+			/*
+				(2) initialize the lploc.js library with a pupil localizer
+			*/
+			var do_puploc = function(r, c, s, nperturbs, pixels, nrows, ncols, ldim) {return [-1.0, -1.0];};
+			var puplocurl = 'https://f002.backblazeb2.com/file/tehnokv-www/posts/puploc-with-trees/demo/puploc.bin';
+			fetch(puplocurl).then(function(response) {
+				response.arrayBuffer().then(function(buffer) {
+					var bytes = new Int8Array(buffer);
+					do_puploc = lploc.unpack_localizer(bytes);
+					console.log('* puploc loaded');
+				})
+			})
+			/*
+				(3) get the drawing context on the canvas and define a function to transform an RGBA image to grayscale
+			*/
+			var ctx = document.getElementsByTagName('canvas')[0].getContext('2d');
+			function rgba_to_grayscale(rgba, nrows, ncols) {
+				var gray = new Uint8Array(nrows*ncols);
+				for(var r=0; r<nrows; ++r)
+					for(var c=0; c<ncols; ++c)
+						// gray = 0.2*red + 0.7*green + 0.1*blue
+						gray[r*ncols + c] = (2*rgba[r*4*ncols+4*c+0]+7*rgba[r*4*ncols+4*c+1]+1*rgba[r*4*ncols+4*c+2])/10;
+				return gray;
+			}
+			/*
+				(4) this function is called each time a video frame becomes available
+			*/
+			var processfn = function(video, dt) {
+				// render the video frame to the canvas element and extract RGBA pixel data
+				ctx.drawImage(video, 0, 0);
+				var rgba = ctx.getImageData(0, 0, 640, 480).data;
+				// prepare input to `run_cascade`
+				image = {
+					"pixels": rgba_to_grayscale(rgba, 480, 640),
+					"nrows": 480,
+					"ncols": 640,
+					"ldim": 640
+				}
+				params = {
+					"shiftfactor": 0.1, // move the detection window by 10% of its size
+					"minsize": 100,     // minimum size of a face
+					"maxsize": 1000,    // maximum size of a face
+					"scalefactor": 1.1  // for multiscale processing: resize the detection window by 10% when moving to the higher scale
+				}
+				// run the cascade over the frame and cluster the obtained detections
+				// dets is an array that contains (r, c, s, q) quadruplets
+				// (representing row, column, scale and detection score)
+				dets = pico.run_cascade(image, facefinder_classify_region, params);
+				dets = update_memory(dets);
+				dets = pico.cluster_detections(dets, 0.2); // set IoU threshold to 0.2
+				// draw detections
+				for(i=0; i<dets.length; ++i)
+					// check the detection score
+					// if it's above the threshold, draw it
+					// (the constant 50.0 is empirical: other cascades might require a different one)
+					if(dets[i][3]>50.0)
+					{
+						//initializing local variables for calculation
+						let firstEye = [];
+						let secondEye =[];
+						var r, c, s;
+						//
+						ctx.beginPath();
+						ctx.arc(dets[i][1], dets[i][0], dets[i][2]/2, 0, 1*Math.PI, false);
+						// x, y, r, radian start, radian end
+						ctx.lineWidth = 3;
+						ctx.strokeStyle = 'green';
+						ctx.stroke();
+						//
+						// find the eye pupils for each detected face
+						// starting regions for localization are initialized based on the face bounding box
+						// (parameters are set empirically)
+						// first eye
+						r = dets[i][0] - 0.075*dets[i][2];
+						c = dets[i][1] - 0.175*dets[i][2];
+						s = 0.35*dets[i][2];
+						[r, c] = do_puploc(r, c, s, 63, image)
+						if(r>=0 && c>=0)
+						{
+							ctx.beginPath();
+							ctx.arc(c, r, 1, 0, 2*Math.PI, false);
+							firstEye = [c,r];
+							ctx.lineWidth = 3;
+							ctx.strokeStyle = 'purple';
+							ctx.stroke();
+						}
+						// second eye
+						r = dets[i][0] - 0.075*dets[i][2];
+						c = dets[i][1] + 0.175*dets[i][2];
+						s = 0.35*dets[i][2];
+						[r, c] = do_puploc(r, c, s, 63, image)
+						if(r>=0 && c>=0)
+						{
+							ctx.beginPath();
+							ctx.arc(c, r, 1, 0, 2*Math.PI, false);
+							secondEye = [c,r];
+							ctx.lineWidth = 3;
+							ctx.strokeStyle = 'red';
+							ctx.stroke();
+						}
+						//-  - - --  - ---- - -- -- -- -- -
+						// calculate stare dir
+						if(r>=0 && c>=0) {
+							// draw middle point
+							ctx.beginPath();
+							ctx.moveTo(firstEye[0], firstEye[1]);
+							ctx.lineTo(dets[i][1], firstEye[1]);
+							ctx.lineTo(dets[i][1], dets[i][0]);
+							ctx.lineTo(dets[i][1], secondEye[1]);
+							ctx.lineTo(secondEye[0], secondEye[1]);
+							// ctx.arc(dets[i][1], dets[i][0], dets[i][2]/42, 0, 1*Math.PI, false);
+							// x, y, r, radian start, radian end
+							ctx.lineWidth = 1;
+							ctx.strokeStyle = 'blue';
+							ctx.stroke();
+
+							let dx = Math.pow(Math.pow(firstEye[0]-dets[i][1],2),0.5) - Math.pow(Math.pow(secondEye[0]-dets[i][1],2),0.5);
+							// the dif between the left eye distance and the right eye distance to center of face in the x scale
+							let dy1 = Math.pow(Math.pow(firstEye[1]-dets[i][0],2),0.5);
+							let dy2 = Math.pow(Math.pow(secondEye[1]-dets[i][0],2),0.5);
+							//same on y scale,  just each eye in seperate
+							let bar1 = 20;
+							let bar2 = 40
+							if (dx < bar1 && dx > -1*bar1 && dy1 > -1*bar2 && dy1 < bar2 && dy2 > -1*bar2 && dy2 < bar2) { //checking
+								historical.push([dx,dy1,dy2,Date.now()]);
+								maxHistory = 84;
+								if (historical.length > maxHistory) {
+									historical.shift();
+
+									let avg = [[0,0],[0,0]];
+									for (let i=1;i<historical.length;i++){
+										avg[0][0] += historical[i][0];
+										avg[0][1] += (historical[i][1] + historical[i][2])/2;
+										if (i>historical.length/2){
+											avg[1][0] += historical[i][0];
+											avg[1][1] += (historical[i][1] + historical[i][2])/2;
+										}
+									}
+									console.table(avg);
+									if (avg[0][0]/maxHistory > dx) {console.log("ll")} else {console.log("rr")}
+									if (avg[0][1]/maxHistory > (dy1+dy2)/2) {console.log("uu")} else {console.log("dd")}
+									// console.log(avg[0]/maxHistory,avg[1]/maxHistory,Date.now() - historical[maxHistory-2][3]);
+	 								// draw sight vector
+									let extra = 42;
+									ctx.beginPath();
+									ctx.moveTo(dets[i][1], dets[i][0]);
+									ctx.lineTo(dets[i][1] + extra*(2*avg[1][0] - avg[0][0])/maxHistory, dets[i][0] + extra*(2*avg[1][1] - avg[0][1])/maxHistory);
+									// ctx.arc(dets[i][1], dets[i][0], dets[i][2]/42, 0, 1*Math.PI, false);
+									// x, y, r, radian start, radian end
+									ctx.lineWidth = 5;
+									ctx.strokeStyle = 'purple';
+									ctx.stroke();
+
+									//calcultae vector angle
+									console.log(Math.cos((2*avg[1][0] - avg[0][0])/(2*avg[1][1] - avg[0][1])));
+									//todo display and calibrate vector
+								}
+								// console.log("what i think is x:", firstEye[0], dets[i][1], secondEye[0], "dx", dx);
+								// console.log("what i think is y:", firstEye[1], dets[i][0], secondEye[1], "dy", dy1, dy2);
+							}
+							// console.table(historical);
+							//calculate more R or L
+							if (Math.pow(firstEye[0]-dets[i][1],2) > Math.pow(secondEye[0]-dets[i][1],2)) {
+								console.log("l");
+							} else {
+								console.log("r");
+							}
+							// console.log(firstEye,secondEye,dets[i][0], dets[i][1], dets[i][2]/2);
+							// dets[i][0] - 0.075*dets[i][2];
+						}
+
+					}
+			}
+			/*
+				(5) instantiate camera handling (see https://github.com/cbrandolino/camvas)
+			*/
+			var mycamvas = new camvas(ctx, processfn);
+			/*
+				(6) it seems that everything went well
+			*/
+			initialized = true;
+		}
+	</script></head>
+	
+	<body>
+	<a>ceno</a>
+	<hr>
+			<section>
+			<h3>developed by itamar, based on lploc.js</h3>
+			<p>Click the button below and allow the page to access your webcam.</p>
+			<p><b>All the processing is done on the client side, i.e., without sending images to a server.</b></p>
+			</section>
+		<hr>
+		<p></p><center><input type="button" value="Start webcam feed" onclick="button_callback()"></center><p></p>
+		<p></p><center><canvas width="640" height="480"></canvas></center><p></p>
+	
+
+	<!-- Fathom analytics -->
+	<!-- <script async="" type="text/javascript" src="./pupilgame_files/analytics.js.download"></script> -->
+	<!-- /Fathom analytics -->
+	
+</body></html>
