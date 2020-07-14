@@ -3,16 +3,25 @@
 <html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 		
 		<meta http-equiv="X-UA-Compatible" content="chrome=1">
-		<title>play-eye - face recognition music for babies</title>
+		<title>🎹👁 play-eye - face recognition music player</title>
 		<script async="" src="./tracker.js.download" id="fathom-script"></script>
 			<script src="camvas.js"></script>
 		<script src="pico.js"></script>
 		<script src="lploc.js"></script>
+
+		<script src="https://unpkg.com/@webcomponents/webcomponentsjs@^2/webcomponents-bundle.js"></script>
+		<script src="https://unpkg.com/tone"></script>
+		<script src="https://unpkg.com/@tonejs/ui"></script>
 		<!--<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">-->
 
 		<link rel="stylesheet" type="text/css" href="./blog.style.css">
 	<script>
 		let historical = [[0,0]]; // initializing historical variable (even though one exist in the eye rec)
+		let historical1 = [];
+		var synth = new Tone.Synth().toMaster()
+		let h = 440;
+
+
 
 		var initialized = false;
 		function button_callback() {
@@ -117,7 +126,7 @@
 							ctx.arc(c, r, 1, 0, 2*Math.PI, false);
 							firstEye = [c,r];
 							ctx.lineWidth = 3;
-							ctx.strokeStyle = 'purple';
+							ctx.strokeStyle = 'pink';
 							ctx.stroke();
 						}
 						// second eye
@@ -137,70 +146,185 @@
 						//-  - - --  - ---- - -- -- -- -- -
 						// calculate stare dir
 						if(r>=0 && c>=0) {
-							// draw middle point
-							ctx.beginPath();
-							ctx.moveTo(firstEye[0], firstEye[1]);
-							ctx.lineTo(dets[i][1], firstEye[1]);
-							ctx.lineTo(dets[i][1], dets[i][0]);
-							ctx.lineTo(dets[i][1], secondEye[1]);
-							ctx.lineTo(secondEye[0], secondEye[1]);
-							// ctx.arc(dets[i][1], dets[i][0], dets[i][2]/42, 0, 1*Math.PI, false);
-							// x, y, r, radian start, radian end
-							ctx.lineWidth = 1;
-							ctx.strokeStyle = 'blue';
-							ctx.stroke();
 
-							let dx = Math.pow(Math.pow(firstEye[0]-dets[i][1],2),0.5) - Math.pow(Math.pow(secondEye[0]-dets[i][1],2),0.5);
-							// the dif between the left eye distance and the right eye distance to center of face in the x scale
-							let dy1 = Math.pow(Math.pow(firstEye[1]-dets[i][0],2),0.5);
-							let dy2 = Math.pow(Math.pow(secondEye[1]-dets[i][0],2),0.5);
-							//same on y scale,  just each eye in seperate
-							let bar1 = 20;
-							let bar2 = 40
-							if (dx < bar1 && dx > -1*bar1 && dy1 > -1*bar2 && dy1 < bar2 && dy2 > -1*bar2 && dy2 < bar2) { //checking
-								historical.push([dx,dy1,dy2,Date.now()]);
-								maxHistory = 84;
-								if (historical.length > maxHistory) {
-									historical.shift();
-
-									let avg = [[0,0],[0,0]];
-									for (let i=1;i<historical.length;i++){
-										avg[0][0] += historical[i][0];
-										avg[0][1] += (historical[i][1] + historical[i][2])/2;
-										if (i>historical.length/2){
-											avg[1][0] += historical[i][0];
-											avg[1][1] += (historical[i][1] + historical[i][2])/2;
-										}
+							// draw middle point triangle
+							// ctx.beginPath();
+							// ctx.moveTo(firstEye[0], firstEye[1]);
+							// ctx.lineTo((firstEye[0] + secondEye[0])/2, (firstEye[1] + secondEye[1])/2);
+							// ctx.lineTo(dets[i][1], dets[i][0]);
+							// ctx.lineTo((firstEye[0] + secondEye[0])/2, (firstEye[1] + secondEye[1])/2);
+							// ctx.lineTo(secondEye[0], secondEye[1]);
+							// // ctx.arc(dets[i][1], dets[i][0], dets[i][2]/42, 0, 1*Math.PI, false);
+							// // x, y, r, radian start, radian end
+							// ctx.lineWidth = 1;
+							// ctx.strokeStyle = 'blue';
+							// ctx.stroke();
+							//
+							// // triangle with 90 deg
+							// ctx.beginPath();
+							// ctx.moveTo(firstEye[0], firstEye[1]);
+							// ctx.lineTo(secondEye[0], secondEye[1]);
+							// ctx.lineTo(dets[i][1], dets[i][0]);
+							// let m = Math.pow((secondEye[1]-firstEye[1])/(secondEye[0]-firstEye[0]),-1);
+							// if(Math.pow((secondEye[1]-firstEye[1]),2) < 0.1) {m=999}
+							// console.log(m);
+							// ctx.lineTo((dets[i][1]+10), (dets[i][0]-m*10));
+							// ctx.lineTo((dets[i][1]-10), (dets[i][0]+m*10));
+							// // ctx.lineTo((firstEye[0] + secondEye[0])/2, (firstEye[1] + secondEye[1])/2);
+							// // ctx.lineTo((firstEye[0] + secondEye[0])/2, (firstEye[1] + secondEye[1])/2);
+							// // ctx.arc(dets[i][1], dets[i][0], dets[i][2]/42, 0, 1*Math.PI, false);
+							// // x, y, r, radian start, radian end
+							// ctx.lineWidth = 2;
+							// ctx.strokeStyle = 'grey';
+							// ctx.stroke();
+							//
+							// //just big triangle
+							// ctx.beginPath();
+							// ctx.moveTo(firstEye[0], firstEye[1]);
+							// ctx.lineTo(secondEye[0], secondEye[1]);
+							// // ctx.lineTo((firstEye[0] + secondEye[0])/2, (firstEye[1] + secondEye[1])/2);
+							// ctx.lineTo(dets[i][1], dets[i][0]);
+							// ctx.lineTo(firstEye[0], firstEye[1]);
+							// // ctx.lineTo((firstEye[0] + secondEye[0])/2, (firstEye[1] + secondEye[1])/2);
+							// // ctx.arc(dets[i][1], dets[i][0], dets[i][2]/42, 0, 1*Math.PI, false);
+							// // x, y, r, radian start, radian end
+							// ctx.lineWidth = 1;
+							// ctx.strokeStyle = 'green';
+							// ctx.stroke();
+							//
+							// let dx = Math.pow(Math.pow(firstEye[0]-dets[i][1],2),0.5) - Math.pow(Math.pow(secondEye[0]-dets[i][1],2),0.5);
+							// // the dif between the left eye distance and the right eye distance to center of face in the x scale
+							// let dy1 = Math.pow(Math.pow(firstEye[1]-dets[i][0],2),0.5);
+							// let dy2 = Math.pow(Math.pow(secondEye[1]-dets[i][0],2),0.5);
+							// //same on y scale,  just each eye in seperate
+							let bar1 = 30;
+							let bar2 = 4;
+							// if (dx < bar1 && dx > -1*bar1 && dy1 > -1*bar2 && dy1 < bar2 && dy2 > -1*bar2 && dy2 < bar2) { //checking sanity
+							let cx = (firstEye[0] + secondEye[0] + dets[i][1])/3;
+							let cy = (firstEye[1] + secondEye[1] + dets[i][0])/3;
+							if (cx < 641 && cy < 481) {
+								if (historical1.length < 4){ // give a minimum start
+									historical1.push([cx, cy, Date.now(),h]);
+								} else {
+									// console.log("l", historical1.length, "D1", historical1[historical1.length - 2][0] - cx, "D2", historical1[historical1.length - 2][1] - cy);
+									if (historical1[historical1.length-2][0]-cx < bar1 && historical1[historical1.length-2][1]-cy < bar1 && historical1[historical1.length-2][0]-cx > -bar1 && historical1[historical1.length-2][1]-cy > -bar1 && Date.now()-historical1[historical1.length-2][2]>100){
+										historical1.push([cx, cy, Date.now(),h]); // make sure change is within normal range
+									} else if (Date.now() - historical1[historical1.length-1][2] > 1000) {
+										historical1 = []; //restart count if out of range for over 1 sec
 									}
-									console.table(avg);
-									if (avg[0][0]/maxHistory > dx) {console.log("ll")} else {console.log("rr")}
-									if (avg[0][1]/maxHistory > (dy1+dy2)/2) {console.log("uu")} else {console.log("dd")}
-									// console.log(avg[0]/maxHistory,avg[1]/maxHistory,Date.now() - historical[maxHistory-2][3]);
-	 								// draw sight vector
-									let extra = 42;
+								}
+								maxHistory = 17;
+								if (historical1.length > maxHistory) {
 									ctx.beginPath();
-									ctx.moveTo(dets[i][1], dets[i][0]);
-									ctx.lineTo(dets[i][1] + extra*(2*avg[1][0] - avg[0][0])/maxHistory, dets[i][0] + extra*(2*avg[1][1] - avg[0][1])/maxHistory);
+									ctx.moveTo(cx, cy);
+									for (let i = historical1.length-1; i>-1	; i--) {
+										ctx.lineTo(historical1[i][0],historical1[i][1]);
+										// console.log(historical1[i][0],historical1[i][1]);
+									}
 									// ctx.arc(dets[i][1], dets[i][0], dets[i][2]/42, 0, 1*Math.PI, false);
 									// x, y, r, radian start, radian end
-									ctx.lineWidth = 5;
+									ctx.lineWidth = 3;
 									ctx.strokeStyle = 'purple';
 									ctx.stroke();
 
-									//calcultae vector angle
-									console.log(Math.cos((2*avg[1][0] - avg[0][0])/(2*avg[1][1] - avg[0][1])));
-									//todo display and calibrate vector
+									historical1.shift();
+									// attempt2 to calculate quadrants and not vectors
+									let dx = historical1[0][0]-cx;
+									let dy = historical1[0][1]-cy;
+									ctx.font = "30px bold monospace";
+									if (Math.pow(dx,2) > bar2 && Math.pow(dx,2) > bar2){
+										h = historical1[historical1.length-1][3];
+										if (dx>0 && dy > 0) {
+											ctx.fillText("UR", 10, 50);
+											h=h+h/6
+											// synth.triggerAttackRelease(h, '0.1');
+										} else if (dx>0 && dy < 0) {
+											ctx.fillText("DR", 10, 50);
+											// synth.triggerAttackRelease(h/2, '0.1');
+											h=h-h/12;
+										} else if (dx<0 && dy < 0) {
+											ctx.fillText("DL", 10, 50);
+											// synth.triggerAttackRelease(h*1.5, '0.1');
+											h=h-h/6;
+										} else {
+											ctx.fillText("UL", 10, 50);
+											// synth.triggerAttackRelease(h*2, '0.1');
+											h=h+h/12;
+										}
+										if (h< 60 || h>1200) {
+											h=440;
+										}
+										synth.triggerAttackRelease(h, '0.1');
+									}
+										// this was super slow
+									// let angle = Math.atan2(historical1[0][0]-cx,historical1[0][1]-cy) * Math.PI/180;
+									// ctx.beginPath();
+									// ctx.arc(dets[i][1], dets[i][0], dets[i][2]/2, angle - 0.03, angle + 0.03, false);
+									// // x, y, r, radian start, radian end
+									// ctx.lineWidth = 6;
+									// ctx.strokeStyle = 'blue';
+									// ctx.stroke();
+									// historical1.shift();
 								}
-								// console.log("what i think is x:", firstEye[0], dets[i][1], secondEye[0], "dx", dx);
-								// console.log("what i think is y:", firstEye[1], dets[i][0], secondEye[1], "dy", dy1, dy2);
+
 							}
+
+
+							// if (dx < bar1 && dx > -1*bar1 && dy1 > -1*bar2 && dy1 < bar2 ) {
+							//
+							//
+							// 	historical.push([dx,dy1,dy2,Date.now()]);
+							// 	maxHistory = 84;
+							// 	if (historical.length > maxHistory) {
+							// 		historical.shift();
+							//
+							// 		let avg = [[0,0],[0,0]];
+							// 		for (let i=1;i<historical.length;i++){
+							// 			avg[0][0] += historical[i][0];
+							// 			avg[0][1] += (historical[i][1] + historical[i][2])/2;
+							// 			if (i>historical.length/2){
+							// 				avg[1][0] += historical[i][0];
+							// 				avg[1][1] += (historical[i][1] + historical[i][2])/2;
+							// 			}
+							// 		}
+							// 		// console.table(avg);
+							// 		// if (avg[0][0]/maxHistory > dx) {console.log("ll")} else {console.log("rr")}
+							// 		// if (avg[0][1]/maxHistory > (dy1+dy2)/2) {console.log("uu")} else {console.log("dd")}
+							// 		// console.log(avg[0]/maxHistory,avg[1]/maxHistory,Date.now() - historical[maxHistory-2][3]);
+	 						// 		// draw sight vector
+							// 		let extra = 42;
+							// 		ctx.beginPath();
+							// 		ctx.moveTo(dets[i][1], dets[i][0]);
+							// 		ctx.lineTo(dets[i][1] + extra*(2*avg[1][0] - avg[0][0])/maxHistory, dets[i][0] + extra*(2*avg[1][1] - avg[0][1])/maxHistory);
+							// 		// ctx.arc(dets[i][1], dets[i][0], dets[i][2]/42, 0, 1*Math.PI, false);
+							// 		// x, y, r, radian start, radian end
+							// 		ctx.lineWidth = 5;
+							// 		ctx.strokeStyle = 'purple';
+							// 		ctx.stroke();
+							//
+							// 		//calcultae vector angle
+							// 		let alpha = 0;
+							// 		console.log(Math.tan((2*avg[1][1] - avg[0][1])/(2*avg[1][0] - avg[0][0]))*Math.PI);
+							// 		ctx.beginPath();
+							// 		// ctx.moveTo(dets[i][1], dets[i][0]);
+							// 		// ctx.lineTo(dets[i][1] + extra*(2*avg[1][0] - avg[0][0])/maxHistory, dets[i][0] + extra*(2*avg[1][1] - avg[0][1])/maxHistory);
+							// 		ctx.arc(dets[i][1], dets[i][0], dets[i][2]/2, Math.PI + alpha - 0.1,  Math.PI + alpha + 0.1, false);
+							// 		// x, y, r, radian start, radian end
+							// 		ctx.lineWidth = 5;
+							// 		ctx.strokeStyle = 'purple';
+							// 		ctx.stroke();
+							// 		//todo display and calibrate vector
+							// 	}
+							// 	// console.log("what i think is x:", firstEye[0], dets[i][1], secondEye[0], "dx", dx);
+							// 	// console.log("what i think is y:", firstEye[1], dets[i][0], secondEye[1], "dy", dy1, dy2);
+							// }
 							// console.table(historical);
 							//calculate more R or L
-							if (Math.pow(firstEye[0]-dets[i][1],2) > Math.pow(secondEye[0]-dets[i][1],2)) {
-								console.log("l");
-							} else {
-								console.log("r");
-							}
+							// if (Math.pow(firstEye[0]-dets[i][1],2) > Math.pow(secondEye[0]-dets[i][1],2)) {
+							// 	console.log("l");
+							// } else {
+							// 	console.log("r");
+							// }
 							// console.log(firstEye,secondEye,dets[i][0], dets[i][1], dets[i][2]/2);
 							// dets[i][0] - 0.075*dets[i][2];
 						}
@@ -222,7 +346,7 @@
 	<a>ceno</a>
 	<hr>
 			<section>
-			<h3>developed by itamar, based on lploc.js</h3>
+			<h3>developed by itamar, based on lploc.js & tone.js</h3>
 			<p>Click the button below and allow the page to access your webcam.</p>
 			<p><b>All the processing is done on the client side, i.e., without sending images to a server.</b></p>
 			</section>
