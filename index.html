@@ -232,7 +232,7 @@
 									let dx = historical1[0][0]-cx;
 									let dy = historical1[0][1]-cy;
 									ctx.font = "30px bold monospace";
-									if (Math.pow(dx,2) > bar2 && Math.pow(dx,2) > bar2){
+									if (Math.pow(dx,2) > bar2 && Math.pow(dx,2) > bar2 && 2*Math.random() > 1){
 										h = historical1[historical1.length-1][3];
 										if (dx>0 && dy > 0) {
 											ctx.fillText("UR", 10, 50);
@@ -343,12 +343,14 @@
 	</script></head>
 	
 	<body>
-	<a>ceno</a>
+	<a href="www.ceno.fun">powered by ceno</a>
 	<hr>
 			<section>
+				<h3><b>🎹👁 play-eye - face recognition music player</b></h3>
 			<h3>developed by itamar, based on lploc.js & tone.js</h3>
-			<p>Click the button below and allow the page to access your webcam.</p>
-			<p><b>All the processing is done on the client side, i.e., without sending images to a server.</b></p>
+			<p>pls allow webcam access</p>
+			<p><b>All the processing is done on the client side no server side and no data collected <b></p>
+				<p> enjoy!</p>
 			</section>
 		<hr>
 		<p></p><center><input type="button" value="Start webcam feed" onclick="button_callback()"></center><p></p>
