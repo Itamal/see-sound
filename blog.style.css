@@ -1,16 +1,19 @@
 body {
-	max-width: 65em;
-	margin: 20px auto;
-	padding-left: 5%;
-	padding-right: 5%;
-	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-family: monospace, "Helvetica Neue", Helvetica, Arial, sans-serif;
 	/*font-family:consolas, monaco, courier, "courier new", fixed-width;*/
-	font-size: 14px;
-	line-height: 1.42857143;
-	color: #333;
-	background-color: #fff;
+	font-size: 4vmin;
+	transition: 2s;
+	text-align: center;
 }
-
+.playbutton {
+	font-family: monospace, "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-size: 6vmin;
+	background-color: greenyellow;
+	border: 1vmin solid pink;
+}
+.colorbox{
+	position: sticky;
+}
 h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
 	font-family: inherit;
 	font-weight: 1500;
