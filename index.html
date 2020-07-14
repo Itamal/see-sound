@@ -189,11 +189,20 @@
 						var r, c, s;
 						//
 						ctx.beginPath();
-						ctx.arc(dets[i][1], dets[i][0], dets[i][2]/2, 0, 1*Math.PI, false);
+						ctx.moveTo(640,480)
+						ctx.lineTo(640,480);
+						ctx.lineTo(0,480);
+						ctx.lineTo(0,0);
+						ctx.lineTo(640,0);
+						ctx.arc(dets[i][1], dets[i][0], dets[i][2]/2, 0, 2*Math.PI, true);
+						ctx.lineTo(640,0);
+						ctx.fill();
 						// x, y, r, radian start, radian end
-						ctx.lineWidth = 3;
-						ctx.strokeStyle = 'green';
-						ctx.stroke();
+						ctx.fillStyle = body.style.backgroundColor;
+						ctx.fill();
+						// ctx.lineWidth = 3;
+						// ctx.strokeStyle = 'green';
+						// ctx.stroke();
 						//
 						// find the eye pupils for each detected face
 						// starting regions for localization are initialized based on the face bounding box
