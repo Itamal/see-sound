@@ -9,9 +9,10 @@
 		<script src="pico.js"></script>
 		<script src="lploc.js"></script>
 
+
 		<script src="https://unpkg.com/@webcomponents/webcomponentsjs@^2/webcomponents-bundle.js"></script>
 		<script src="https://unpkg.com/tone"></script>
-<!--		<script src="https://unpkg.com/@tonejs/ui"></script>-->
+		<script src="https://unpkg.com/@tonejs/ui"></script>
 		<script type="text/javascript" src="Tonejs-Instruments.js"></script>
 
 		<!--<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">-->
@@ -137,8 +138,23 @@
 			parent.append(boxD);
 
 			/*
-				(3) get the drawing context on the canvas and define a function to transform an RGBA image to grayscale
-			*/
+			load samples
+			D Bb C G*/ //TODO NOTE - FIND A Bb
+
+			var sampler = new Tone.Sampler({
+						"D4": "https://ceno.s3.eu-central-1.amazonaws.com/D4.wav",
+						"B4": "https://ceno.s3.eu-central-1.amazonaws.com/B4.wav",
+						"C4": "https://ceno.s3.eu-central-1.amazonaws.com/C4.wav",
+						"G4": "https://ceno.s3.eu-central-1.amazonaws.com/G4.wav",
+					}, function () {
+						sampler.toMaster();
+						//sampler will repitch the closest sample
+						sampler.triggerAttack("D4")
+					},
+			);
+
+				// (3) get the drawing context on the canvas and define a function to transform an RGBA image to grayscale
+			// */
 			var ctx = document.getElementsByTagName('canvas')[0].getContext('2d');
 			function rgba_to_grayscale(rgba, nrows, ncols) {
 				var gray = new Uint8Array(nrows*ncols);
@@ -194,12 +210,18 @@
 						ctx.lineTo(0,480);
 						ctx.lineTo(0,0);
 						ctx.lineTo(640,0);
-						ctx.arc(dets[i][1], dets[i][0], dets[i][2]/2, 0, 2*Math.PI, true);
+						// ctx.arc(dets[i][1], dets[i][0], dets[i][2]/2, 0, 2*Math.PI, true);
 						ctx.lineTo(640,0);
 						ctx.fill();
 						// x, y, r, radian start, radian end
 						ctx.fillStyle = body.style.backgroundColor;
 						ctx.fill();
+						ctx.beginPath();
+						ctx.arc(dets[i][1], dets[i][0], dets[i][2]/2, 0.9*Math.PI, 2.1*Math.PI, true);
+
+						ctx.lineWidth = 6;
+						ctx.strokeStyle = 'pink';
+						ctx.stroke();
 						// ctx.lineWidth = 3;
 						// ctx.strokeStyle = 'green';
 						// ctx.stroke();
@@ -215,7 +237,7 @@
 						if(r>=0 && c>=0)
 						{
 							ctx.beginPath();
-							ctx.arc(c, r, 1, 0, 2*Math.PI, false);
+							ctx.arc(c, r, 10, 0, 2*Math.PI, false);
 							firstEye = [c,r];
 							ctx.lineWidth = 3;
 							ctx.strokeStyle = 'pink';
@@ -229,10 +251,10 @@
 						if(r>=0 && c>=0)
 						{
 							ctx.beginPath();
-							ctx.arc(c, r, 1, 0, 2*Math.PI, false);
+							ctx.arc(c, r, 10, 0, 2*Math.PI, false);
 							secondEye = [c,r];
 							ctx.lineWidth = 3;
-							ctx.strokeStyle = 'red';
+							ctx.strokeStyle = 'pink';
 							ctx.stroke();
 						}
 						//-  - - --  - ---- - -- -- -- -- -
@@ -326,33 +348,41 @@
 									let dxdy = Math.pow(Math.pow(dy/dx,2),0.5);
 									// console.log(dx,dy,dxdy);
 									ctx.font = "30px bold monospace";
-									if (Math.pow(dx,2) > bar2 && Math.pow(dy,2) > bar2 && 2*Math.random() > 1){
-										h = historical1[historical1.length-1][3];
+									if (Math.pow(dx,2) > bar2 &&
+											Math.pow(dy,2) > bar2 &&
+											2*Math.random() > 1 
+											// Date.now()-historical1[historical1.length-2][2] > 2000
+											){
+										// h = historical1[historical1.length-1][3];
 										if (dy>0 && dxdy > 1) {
 											ctx.fillText("UU", 10, 50);
 											body.style.backgroundColor = "blue";
-											h=120;
+											sampler.triggerAttack('G4');
+											// h=120;
 											// synth.triggerAttackRelease(h, '0.1');
 										} else if (dy<0 && dxdy > 1) {
 											ctx.fillText("DD", 10, 50);
 											body.style.backgroundColor = "red";
+											sampler.triggerAttack('D4');
 											// synth.triggerAttackRelease(h/2, '0.1');
-											h=240;
+											// h=240;
 										} else if (dx>0 && dxdy < 1) {
 											ctx.fillText("RR", 10, 50);
 											body.style.backgroundColor = "green";
+											sampler.triggerAttack('C4');
 											// synth.triggerAttackRelease(h*1.5, '0.1');
-											h=360;
+											// h=360;
 										} else {
 											ctx.fillText("LL", 10, 50);
 											body.style.backgroundColor = "yellow";
+											sampler.triggerAttack('B4');
 											// synth.triggerAttackRelease(h*2, '0.1');
-											h=480;
+											// h=480;
 										}
-										if (h< 60 || h>1200) {
-											h=440;
-										}
-										synth.triggerAttackRelease(h,'0.4');
+										// if (h< 60 || h>1200) {
+										// 	h=440;
+										// }
+										// D Bb C G
 									}
 										// this was super slow
 									// let angle = Math.atan2(historical1[0][0]-cx,historical1[0][1]-cy) * Math.PI/180;
